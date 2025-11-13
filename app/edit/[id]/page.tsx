@@ -1,96 +1,124 @@
 
 
-"use client"
+"use client";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useRouter, useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useParams, useRouter } from "next/navigation";
 
-export default function Page() {
-  const [value, setValue] = useState({
+export default function EditTodoPage() {
+  const params = useParams();
+  const id = params.id;
+  const router = useRouter();
+
+  const [todo, setTodo] = useState({
     title: "",
-    desc: ""
+    desc: "",
+    dueDate: "",
   });
-  const { push } = useRouter();
-  const params = useParams(); // get id from URL
 
-  // ✅ Fetch todo data when page loads
+  // Fetch existing todo
   useEffect(() => {
     const fetchTodo = async () => {
       try {
-        const response = await axios.get(`/api/todo/${params.id}`);
+        const response = await axios.get(`/api/todo/${id}`);
         if (response.data.success) {
-          setValue({
-            title: response.data.todo.title,
-            desc: response.data.todo.desc
-          });
+          setTodo(response.data.todo);
+        } else {
+          toast.error("Failed to load Todo");
         }
       } catch (error) {
-        console.log("Error fetching todo:", error);
+        console.error(error);
+        toast.error("Something went wrong!");
       }
     };
     fetchTodo();
-  }, [params.id]);
+  }, [id]);
 
-  const handleONchange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue({
-      ...value,
-      [e.target.name]: e.target.value
+  // Handle input change
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setTodo({
+      ...todo,
+      [e.target.name]: e.target.value,
     });
   };
 
-  // ✅ Handle update
-  const handleSubmit = async () => {
-    
+  // Handle update
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const request = await axios.patch(`/api/todo/${params.id}`, value);
-      const response = request.data;
-
-      if (request.status === 200) {
-        toast.success(response.message);
-        push("/"); // redirect back to home
+      const response = await axios.patch(`/api/todo/${id}`, todo);
+      if (response.data.success) {
+        toast.success("✅ Todo updated successfully!");
+        router.push("/");
+      } else {
+        toast.error(response.data.message);
       }
     } catch (error) {
-      console.log("Error updating todo:", error);
-      toast.error("Failed to update todo");
+      console.error(error);
+      toast.error("Something went wrong!");
     }
   };
 
   return (
-    <div className="h-screen flex justify-center">
-      <div className="mt-8 flex flex-col p-10 bg-[#6C63FF] h-80 rounded-lg gap-8">
-        <h1 className="text-white font-bold text-2xl">Update ToDo</h1>
-
-        <label className="relative block">
-          <input
-            value={value.title}
-            onChange={handleONchange}
-            name="title"
-            className="placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-3 pr-3 shadow-sm focus:outline-none focus:ring-sky-500 focus:ring-1 sm:text-sm"
-            placeholder="Enter your title"
-            type="text"
-          />
-        </label>
-
-        <label className="relative block">
-          <input
-            value={value.desc}
-            onChange={handleONchange}
-            name="desc"
-            className="placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-3 pr-3 shadow-sm focus:outline-none focus:ring-sky-500 focus:ring-1 sm:text-sm"
-            placeholder="Enter your description"
-            type="text"
-          />
-        </label>
-
-        <button
-          className="bg-green-500 rounded-lg px-4 py-2 font-bold text-white"
-          onClick={handleSubmit}
-        >
-          Submit
-        </button>
+    <div className="min-h-screen bg-[url('/board-b.avif')] bg-cover bg-center bg-no-repeat flex flex-col justify-center items-center p-6">
+      {/* Motivational Quote */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-extrabold text-black drop-shadow-lg mb-2">
+          📝 Edit Your Task
+        </h1>
+        <p className="italic text-black/90 text-lg">
+          “Improving your work is the key to progress.” 🌻
+        </p>
       </div>
+
+      {/* Sticky Note Card */}
+      <div className="backdrop-blur-md shadow-2xl rounded-2xl p-8 w-full max-w-md transform -rotate-1 hover:rotate-0 hover:scale-105 transition-all duration-300">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input
+            type="text"
+            name="title"
+            placeholder="Enter your title"
+            value={todo.title}
+            onChange={handleChange}
+            required
+            className="p-3 rounded-md border border-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-gray-500"
+          />
+
+          <textarea
+            name="desc"
+            placeholder="Enter your description"
+            value={todo.desc}
+            onChange={handleChange}
+            required
+            rows={3}
+            className="p-3 rounded-md border border-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-gray-500 resize-none"
+          />
+
+          <input
+            type="datetime-local"
+            name="dueDate"
+            value={todo.dueDate ? todo.dueDate.slice(0, 16) : ""}
+            onChange={handleChange}
+            className="p-3 rounded-md border border-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-gray-600"
+          />
+
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-md shadow-lg transition-transform transform hover:scale-105"
+          >
+            Update
+          </button>
+        </form>
+      </div>
+
+      {/* Floating Button to Go Back */}
+      <button
+        onClick={() => router.push("/")}
+        className="fixed bottom-10 right-10 bg-[#6C63FF] hover:bg-[#5850EC] text-white font-bold py-3 px-6 rounded-full shadow-xl flex items-center gap-2 transition-all"
+      >
+        ⬅ Back
+      </button>
     </div>
   );
 }
-
