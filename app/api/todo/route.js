@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import DBCon from "../../libs/db";
 import todModel from "../../../Models/Todo";
